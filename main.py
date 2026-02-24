@@ -18,6 +18,14 @@ def main():
         contents="Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum.",
     )
 
+    if object.usage_metadata is None:
+        raise RuntimeError("failed api request")
+
+    print(
+        "User prompt: Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."
+    )
+    print(f"Prompt tokens: {object.usage_metadata.prompt_token_count}")
+    print(f"Response tokens: {object.usage_metadata.candidates_token_count}")
     print(object.text)
 
 
