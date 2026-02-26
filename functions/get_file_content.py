@@ -2,6 +2,23 @@ import os
 
 from config import MAX_CHARS
 
+from google.genai import types
+
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Read up to MAX_CHARS characters from a file located inside the working directory. Returns file content or an error string if the file is missing, a directory, or outside the permitted working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="File path to read, relative to the working directory",
+            ),
+        },
+        required=["file_path"],
+    ),
+)
+
 
 def get_file_content(working_directory, file_path):
     try:
@@ -11,24 +28,22 @@ def get_file_content(working_directory, file_path):
             os.path.commonpath([working_dir_abs, target_file]) == working_dir_abs
         )
 
-        if not os.path.isfile(target_file):
-            return f'Error: Cannot write to "{file_path}" as it is outside the permitted working directory'
+        if not valid_target_file:
+            return f'Error: Cannot read "{file_path}" as it is outside the permitted working directory'
+
+        if not os.path.exists(target_file) or not os.path.isfile(target_file):
+            return f'Error: "{file_path}" does not exist or is not a regular file'
 
         if os.path.isdir(target_file):
-            return f'Error: Cannot write to "{file_path}" as it is a directory'
+            return f'Error: "{file_path}" is a directory'
 
-        if not valid_target_file:
-            return f'Error: Cannot list "{file_path}" as it is outside the permitted working directory'
+        with open(target_file, "r", encoding="utf-8") as f:
+            data = f.read(MAX_CHARS)
+            more = f.read(1)
 
-        content = ""
-
-        with open(target_file, "r") as f:
-            content += f.read(MAX_CHARS)
-            if f.read(MAX_CHARS):
-                content += (
-                    f'[...File "{file_path}" truncated at {MAX_CHARS} characters]'
-                )
-
-        return content
+        if more:
+            data += f'[...File "{file_path}" truncated at {MAX_CHARS} characters]'
+        
+        return data
     except Exception as e:
         return f"Error: {e}"

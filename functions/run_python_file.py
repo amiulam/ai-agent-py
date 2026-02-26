@@ -1,6 +1,28 @@
 import os
 import subprocess
 
+from google.genai import types
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Execute a Python file located inside the working directory. Provide only the required parameter 'file_path' (relative path) and an optional 'args' list of strings. The working directory is injected automatically and should not be provided by the caller.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the Python file to execute, relative to the working directory (for example: \"main.py\" or \"pkg/module.py\")",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                description="Optional list of command-line arguments to pass to the Python script (each item is a string)",
+                items=types.Schema(type=types.Type.STRING),
+            ),
+        },
+        required=["file_path"],
+    ),
+)
+
 
 def run_python_file(working_directory, file_path, args=None):
     try:
@@ -18,7 +40,7 @@ def run_python_file(working_directory, file_path, args=None):
 
         command = ["python", target_file]
 
-        if type(args) == list:
+        if type(args) is list:
             command.extend([args])
 
         result = subprocess.run(
